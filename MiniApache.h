@@ -12,8 +12,8 @@ Copyright (c) 2015, Szymon Zmilczak
 #include "WProgram.h"
 #endif
 
-#include "Ethernet.h"
-#include "SD.h"
+#include "ESP8266WiFi.h"
+#include "FS.h"
 
 #include "MiniApacheUtils.h"
 
@@ -28,7 +28,7 @@ Copyright (c) 2015, Szymon Zmilczak
 // MiniApache class
 class MiniApache {
   private:
-	EthernetServer* _server;                       // EthernetServer instance
+	WiFiServer* _server;                           // WiFiServer instance
 	char* _storage_path;                           // path to folder containing files which should be served 
 	File _storageFile;                             // currently served File object
 	char _HTTP_request[REQUEST_BUFFER_SIZE];       // buffered HTTP request stored as null terminated string
@@ -38,12 +38,12 @@ class MiniApache {
 	
 	
   public:
-	EthernetClient client;                         // EthernetClient object which is served at the moment
+	WiFiServer client;                             // WiFiServer object which is served at the moment
 	char* request_path;                            // path of current request (without GET data)
 	char* GET_data;                                // GET data of current request
 	
 	MiniApache(int port);                          // init on port
-	bool begin(char* storage_path, int cspin);     // test components and start server; cspin is SD card pin
+	bool begin(char* storage_path);                // test components and start server
 	char* GetMIMEType(char *path);                 // guess MIME type of path
 	char* ExtractRequestPath();                    // extract request_path from _HTTP_request
 	char* ExtractRequestData();                    // extract GET_data from _HTTP_request

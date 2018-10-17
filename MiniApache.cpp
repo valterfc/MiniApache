@@ -8,7 +8,7 @@ Copyright (c) 2015, Szymon Zmilczak
 
 
 MiniApache::MiniApache(int port){
-	_server = new EthernetServer(port);
+	_server = new WiFiServer(port);
 	//_server(port);
 	
 	_storage_path = "";
@@ -18,17 +18,19 @@ MiniApache::MiniApache(int port){
 	_serve_status = 0;
 }
 
-bool MiniApache::begin(char *storage_path, int cspin){
+bool MiniApache::begin(char *storage_path){
 	_storage_path = storage_path;
 	_serve_status = 1;
 	
-	if (!SD.begin(cspin)) {
+	//init filesystem
+	if (!SPIFFS.begin()) {
 		#if SERIAL_DEBUG == 1
-			Serial.println("ERROR - SD card initialization failed!");
+			Serial.println("ERROR - SPIFFS initialization failed!");
 		#endif
 		_error_status = 1;
 		return false;    // init failed
 	}
+
 	bool r = TestIndexFile();
 	#if SERIAL_DEBUG == 1
 		if (r){
@@ -40,7 +42,7 @@ bool MiniApache::begin(char *storage_path, int cspin){
 
 bool MiniApache::TestIndexFile(){
 	char* index = JoinStr(_storage_path, DEFAULT_INDEX_FILE);
-	if (!SD.exists(index)){
+	if (!SPIFFS.exists(index)){
 		#if SERIAL_DEBUG == 1
 			Serial.print("ERROR - Can't find index file!");
 		#endif
@@ -59,13 +61,13 @@ void MiniApache::SetError(int code){
 char* MiniApache::GetErrorMessage(){
 	switch(_error_status){
 		case 0:
-			return "No error decetded.";
+			return "No error detected.";
 		break;
 		case 1:
-			return "SD card initialization failed!";
+			return "SPIFFS card initialization failed!";
 		break;
 		case 2:
-			return "Can't find index file! Check SD card and reset device.";
+			return "Can't find index file! Check SPIFFS and reset device (upload a file).";
 		break;
 		case 3:
 			return "Ethernet module initialization failed!";
@@ -150,7 +152,7 @@ void MiniApache::QuickResponse(char* data){
 }
 
 int MiniApache::ServeFile(char *path){ // Not used
-    _storageFile = SD.open(path);
+    _storageFile = SPIFFS.open(path, "r");
     if (_storageFile){ // Serve file
     	PrintHeader(200, "OK", GetMIMEType(path), true);
         while(_storageFile.available()){
@@ -279,7 +281,7 @@ void MiniApache::ProcessRequest(){
 			request_path = JoinStr(DEFAULT_INDEX_FILE, "");
 		}
 		char* file_path = JoinStr(_storage_path, request_path);
-		_storageFile = SD.open(file_path);
+		_storageFile = SPIFFS.open(file_path, "r");
 		if (_storageFile){
 			if (_storageFile.isDirectory()){ // List directory
 				PrintHeader(200, "OK", "text/html", false);
